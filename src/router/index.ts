@@ -1,12 +1,13 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 
 import Layout from '../layout/index.vue';
 import dashboard from '@/router/modules/dashboard';
+import geo from '@/router/modules/geo';
 
-const subRoutes = [dashboard];
+export const subRoutes = [dashboard, geo];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',

@@ -1,20 +1,28 @@
 <template>
   <div class="full">
-    <el-button>test</el-button>
+    <div class="padding-medium" v-for="(item, index) in menus" :key="index">
+      <h4 class="margin-bottom-medium">{{ item.name }}</h4>
+      <ul class="padding-left-large">
+        <li v-for="(item, index) in item.children" :key="index">
+          <router-link :to="item.path">{{ item.name }}</router-link>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script>
-import { ElButton } from 'element-plus';
+import { defineComponent } from 'vue';
 
-export default {
-  components: {
-    ElButton,
-  },
+import { subRoutes } from '@/router';
+
+export default defineComponent({
   data() {
-    return {};
+    return {
+      menus: subRoutes.slice(1),
+    };
   },
-};
+});
 </script>
 
 <!--<style lang="scss" scoped>-->
