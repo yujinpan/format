@@ -3,6 +3,7 @@ import vueJsx from '@vitejs/plugin-vue-jsx';
 import { resolve } from 'path';
 import { resolveWithAlias } from 'path-ops';
 import { defineConfig } from 'vite';
+import vitePluginGA from 'vite-plugin-ga';
 
 import pkg from './package.json';
 
@@ -13,7 +14,13 @@ const alias = {
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [vue(), vueJsx()],
+  plugins: [
+    vue(),
+    vueJsx(),
+    vitePluginGA({
+      id: 'G-S66MPLRFJZ',
+    }),
+  ],
   server: {
     proxy: {
       '/api': {
