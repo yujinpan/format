@@ -13,7 +13,11 @@
     />
 
     <div class="margin-top-base">
-      DataVJSON:
+      <a
+        target="_blank"
+        href="http://datav.aliyun.com/portal/school/atlas/level_generator"
+        >DataVJSON（导出层级(开放格式）</a
+      >:
       <pre><code>{ name: string; payload: TopoJSON; children: {...} }</code></pre>
     </div>
     <div class="margin-top-base">
