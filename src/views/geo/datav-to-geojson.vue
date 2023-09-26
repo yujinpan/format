@@ -49,6 +49,10 @@
       - {{ AreaLevel.DISTRICT }}
             </pre>
           </li>
+          <li class="margin-top-base">
+            <span>Remove Parent Node</span>&nbsp;&nbsp;
+            <el-switch v-model="removeParentNode" />
+          </li>
         </ul>
       </li>
     </ul>
@@ -80,6 +84,7 @@ export default defineComponent({
       loading: false,
       keepAreaTree: false,
       saveLevel: AreaLevel.DISTRICT,
+      removeParentNode: false,
       AreaLevels,
       AreaLevel,
     };
@@ -98,7 +103,11 @@ export default defineComponent({
           const json = (await readJSONFile(file)) as DataVJSON;
 
           if (this.keepAreaTree) {
-            const areaTreeJson = datavToAreaTree(json, this.saveLevel);
+            const areaTreeJson = datavToAreaTree(
+              json,
+              this.saveLevel,
+              this.removeParentNode,
+            );
 
             this.downloadJson(areaTreeJson, json.name);
           } else {

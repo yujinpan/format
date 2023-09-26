@@ -91,8 +91,10 @@ function inLevel(sourceLevel: AreaLevel, targetLevel: AreaLevel) {
 export function datavToAreaTree(
   json: DataVJSON,
   level = AreaLevel.DISTRICT,
+  removeParentNode = false,
 ): AreaTreeNode[] {
-  const treeData = treeMap([json], (node) => ({
+  const data = removeParentNode ? Object.values(json.children) : [json];
+  const treeData = treeMap(data, (node) => ({
     ...node,
     children: Object.values(node.children),
   }));
