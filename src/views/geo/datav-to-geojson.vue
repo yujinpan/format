@@ -1,7 +1,7 @@
 <template>
-  <div class="padding-medium">
+  <div>
     <el-button @click="triggerUpload" :loading="loading">
-      DataVJSON To GeoJSON
+      Upload Files
     </el-button>
     <input
       @change="uploadFile"
@@ -12,7 +12,7 @@
       multiple
     />
 
-    <h3 class="margin-top-medium">Description</h3>
+    <h3 class="margin-top-medium">DataVJSON To GeoJSON</h3>
     <div class="margin-top-base">
       <a
         target="_blank"

@@ -1,6 +1,14 @@
 <template>
-  <div class="div">
-    <router-view></router-view>
+  <div class="padding-medium">
+    <router-link to="/">
+      <span class="fl-cv">
+        <img class="margin-right-base" width="20" src="/logo.svg" />
+        Format
+      </span>
+    </router-link>
+    <div class="margin-top-medium">
+      <router-view></router-view>
+    </div>
   </div>
 </template>
 

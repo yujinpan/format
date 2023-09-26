@@ -7,5 +7,10 @@ export default {
       name: 'datav-to-geojson',
       component: () => import('@/views/geo/datav-to-geojson.vue'),
     },
+    {
+      path: '/geo/topojson-to-geojson',
+      name: 'topojson-to-geojson',
+      component: () => import('@/views/geo/topojson-to-geojson.vue'),
+    },
   ],
 };
