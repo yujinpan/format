@@ -35,23 +35,39 @@ export function getAreaFeature(code: string) {
   }));
 }
 
+const getAreaGeometryQueue = [];
+let getAreaGeometryCount = 0;
 const areaGeometryCache: Record<string, any> = {};
 export function getAreaGeometry(code: string) {
   if (areaGeometryCache[code]) return Promise.resolve(areaGeometryCache[code]);
 
+  // amap api is limit 30/s
+  if (getAreaGeometryCount > 30) {
+    return new Promise((resolve) => {
+      getAreaGeometryQueue.push(() => resolve(getAreaGeometry(code)));
+    });
+  }
+
+  getAreaGeometryCount++;
   return (areaGeometryCache[code] = fetch(
     `https://restapi.amap.com/v3/config/district?&key=${AMAP_KEY}&keywords=${code}&extensions=all`,
   )
     .then((res) => res.json())
     .then(
       (res) =>
-        (areaGeometryCache[code] = readGeometry(res.districts[0]?.polyline)),
+        (areaGeometryCache[code] = readGeometry(res.districts?.[0]?.polyline)),
     )
     .catch((e) => {
       // eslint-disable-next-line no-console
       console.error(e);
       return String(e);
-    }));
+    })).finally(() => {
+    // amap api is limit 30/s
+    setTimeout(() => {
+      getAreaGeometryCount--;
+      getAreaGeometryQueue.shift()?.();
+    }, 1000);
+  });
 }
 
 export function exportSingleFile(codes: string[]) {
