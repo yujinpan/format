@@ -35,17 +35,23 @@ export function getAreaFeature(code: string) {
   }));
 }
 
+const areaGeometryCache: Record<string, any> = {};
 export function getAreaGeometry(code: string) {
-  return fetch(
+  if (areaGeometryCache[code]) return Promise.resolve(areaGeometryCache[code]);
+
+  return (areaGeometryCache[code] = fetch(
     `https://restapi.amap.com/v3/config/district?&key=${AMAP_KEY}&keywords=${code}&extensions=all`,
   )
     .then((res) => res.json())
-    .then((res) => readGeometry(res.districts[0]?.polyline))
+    .then(
+      (res) =>
+        (areaGeometryCache[code] = readGeometry(res.districts[0]?.polyline)),
+    )
     .catch((e) => {
       // eslint-disable-next-line no-console
       console.error(e);
       return String(e);
-    });
+    }));
 }
 
 export function exportSingleFile(codes: string[]) {
