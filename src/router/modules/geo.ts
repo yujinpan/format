@@ -3,6 +3,11 @@ export default {
   name: 'geo',
   children: [
     {
+      path: '/geo/areas',
+      name: 'areas',
+      component: () => import('@/views/geo/areas.vue'),
+    },
+    {
       path: '/geo/datav-to-geojson',
       name: 'datav-to-geojson',
       component: () => import('@/views/geo/datav-to-geojson.vue'),
