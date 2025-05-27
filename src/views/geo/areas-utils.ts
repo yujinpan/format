@@ -81,6 +81,19 @@ export function exportSingleFile(codes: string[]) {
   });
 }
 
+export function exportAreaTree(nodes: { code; name; children }[]) {
+  const blob = new Blob([
+    JSON.stringify(
+      treeMap(nodes, (node) => ({
+        code: node.code,
+        name: node.name,
+        children: node.children,
+      })),
+    ),
+  ]);
+  downloadByBlob(blob, 'area_tree.json');
+}
+
 export function exportFiles(codes: string[]) {
   const zip = new JSZip();
   const areas = zip.folder('areas');

@@ -7,6 +7,9 @@
     <ElButton @click="handleExportMany" :loading="exportLoading">
       Export Many Files(One Area One File</ElButton
     >
+    <ElButton @click="exportAreaTree(selectedAreas)" :loading="exportLoading">
+      Export Area Tree</ElButton
+    >
 
     <ElTable
       @selection-change="handleSelectionChange"
@@ -28,12 +31,14 @@ import { ElButton, ElTable, ElTableColumn } from 'element-plus';
 import { computed, defineComponent, ref, shallowRef } from 'vue';
 
 import {
+  exportAreaTree,
   exportFiles,
   exportSingleFile,
   getAreasTree,
 } from '@/views/geo/areas-utils';
 
 export default defineComponent({
+  methods: { exportAreaTree },
   components: { ElButton, ElTable, ElTableColumn },
   props: {},
   setup() {
