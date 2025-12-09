@@ -15,10 +15,10 @@
       @selection-change="handleSelectionChange"
       :data="areasTree"
       selection
-      row-key="code"
+      row-key="adcode"
     >
       <ElTableColumn type="selection"></ElTableColumn>
-      <ElTableColumn prop="code" label="code"></ElTableColumn>
+      <ElTableColumn prop="adcode" label="code"></ElTableColumn>
       <ElTableColumn prop="name" label="name"></ElTableColumn>
       <ElTableColumn prop="level" label="level"></ElTableColumn>
       <ElTableColumn prop="center" label="center"></ElTableColumn>
@@ -50,7 +50,7 @@ export default defineComponent({
     };
 
     const selectedAreasCodes = computed(() =>
-      selectedAreas.value.map((item) => item.code),
+      selectedAreas.value.map((item) => item.adcode),
     );
 
     getAreasTree().then((res) => (areasTree.value = res));

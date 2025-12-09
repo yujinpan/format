@@ -1,96 +1,112 @@
 import JSZip from 'jszip';
 import { treeMap } from 'operation-tree-node';
 
-import type { GeoJSONMultiPolygon, GeoJSONPolygon } from 'ol/format/GeoJSON';
+import type {
+  GeoJSONFeature,
+  GeoJSONFeatureCollection,
+  GeoJSONMultiPolygon,
+  GeoJSONPolygon,
+} from 'ol/format/GeoJSON';
 
 import { downloadByBlob } from '@/utils/file';
 
-const AMAP_KEY = 'ffc2ef5a6eb5fc69bf81c7ae0a304009';
+const country = 'https://geo.datav.aliyun.com/areas_v3/bound/100000.json';
+const province = 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json';
+const city =
+  'https://geo.datav.aliyun.com/areas_v3/bound/100000_full_city.json';
+const areas =
+  'https://raw.githubusercontent.com/modood/Administrative-divisions-of-China/refs/heads/master/dist/areas.json';
+
+const county = (code: string) =>
+  `https://raw.githubusercontent.com/Civitasv/DataV_GeoJSON/refs/heads/master/geojson/county/${code}.json`;
+
+const featureMap = {};
 
 export function getAreasTree() {
-  return fetch(
-    `https://restapi.amap.com/v3/config/district?&subdistrict=3&key=${AMAP_KEY}`,
-  )
-    .then((res) => res.json())
-    .then((res) => {
-      return treeMap(res.districts, (node: any) => {
-        return {
-          code: node.adcode,
-          name: node.name,
-          level: node.level,
-          center: node.center,
-          children: node.districts,
-        };
+  return Promise.all([
+    fetch(country),
+    fetch(province),
+    fetch(city),
+    fetch(areas),
+  ])
+    .then((res) =>
+      Promise.all(res.map((item) => item.json() as GeoJSONFeatureCollection)),
+    )
+    .then(([country, province, city, areas]) => {
+      const data =
+        country.features?.map((item) => {
+          featureMap[item.adcode] = { ...item };
+          return item.properties || {};
+        }) || [];
+      areas?.forEach((item) => {
+        const parentCode = item.cityCode + '00';
+        const parent = city.features?.find(
+          (i) => String(i.properties.adcode) === parentCode,
+        )?.properties;
+        if (parent) {
+          parent.children = parent.children || [];
+          parent.children.push({
+            adcode: Number(item.code),
+            name: item.name,
+            level: 'area',
+          });
+        }
       });
+      city.features?.forEach((item) => {
+        featureMap[item.adcode] = { ...item, children: undefined };
+        const find = province.features?.find(
+          (i) => i.properties?.adcode === item.properties?.parent?.adcode,
+        )?.properties;
+        if (find) {
+          find.children = find.children || [];
+          find.children.push(item.properties);
+        }
+      });
+      province.features?.forEach((item) => {
+        featureMap[item.adcode] = { ...item };
+        const find = data.find(
+          (i) => i.adcode === item.properties?.parent?.adcode,
+        );
+        if (find) {
+          find.children = find.children || [];
+          find.children.push(item.properties);
+        }
+      });
+      return data;
     });
 }
 
 export function getAreaFeature(code: string) {
-  return getAreaGeometry(code).then((res) => ({
-    type: 'Feature',
-    geometry: res,
-    properties: {
-      code,
-    },
-  }));
-}
-
-const getAreaGeometryQueue = [];
-let getAreaGeometryCount = 0;
-const areaGeometryCache: Record<string, any> = {};
-export function getAreaGeometry(code: string) {
-  if (areaGeometryCache[code]) return Promise.resolve(areaGeometryCache[code]);
-
-  // amap api is limit 30/s
-  if (getAreaGeometryCount > 30) {
-    return new Promise((resolve) => {
-      getAreaGeometryQueue.push(() => resolve(getAreaGeometry(code)));
-    });
+  if (featureMap[code]) {
+    return Promise.resolve(formatFeature(featureMap[code]));
+  } else {
+    return fetch(county(code))
+      .then((res) => res.json())
+      .then((res) => {
+        featureMap[code] = res;
+        return formatFeature(res);
+      })
+      .catch(() => undefined);
   }
-
-  getAreaGeometryCount++;
-  return (areaGeometryCache[code] = fetch(
-    `https://restapi.amap.com/v3/config/district?&key=${AMAP_KEY}&keywords=${code}&extensions=all`,
-  )
-    .then((res) => res.json())
-    .then((res) => {
-      if (!res.districts?.[0]?.polyline) {
-        areaGeometryCache[code] = null;
-      } else {
-        return (areaGeometryCache[code] = readGeometry(
-          res.districts?.[0]?.polyline,
-        ));
-      }
-    })
-    .catch((e) => {
-      // eslint-disable-next-line no-console
-      console.error(e);
-      return String(e);
-    })).finally(() => {
-    // amap api is limit 30/s
-    setTimeout(() => {
-      getAreaGeometryCount--;
-      getAreaGeometryQueue.shift()?.();
-    }, 1000);
-  });
 }
 
 export function exportSingleFile(codes: string[]) {
   return Promise.all(codes.map(getAreaFeature)).then((res) => {
     const featureCollection = {
       type: 'FeatureCollection',
-      features: res,
+      features: res.filter((item) => !!item),
     };
     const blob = new Blob([JSON.stringify(featureCollection)]);
     downloadByBlob(blob, 'areas.json');
   });
 }
 
-export function exportAreaTree(nodes: { code; name; children }[]) {
+export function exportAreaTree(nodes: { adcode; level; name; children }[]) {
+  nodes = nodes.filter((node) => node.level === nodes[0]?.level);
   const blob = new Blob([
     JSON.stringify(
       treeMap(nodes, (node) => ({
-        code: node.code,
+        code: node.adcode,
         name: node.name,
         children: node.children,
       })),
@@ -105,14 +121,16 @@ export function exportFiles(codes: string[]) {
 
   return Promise.all(
     codes.map((code) =>
-      getAreaFeature(code).then((res) =>
-        areas.file(
-          `${code}.json`,
-          JSON.stringify({
-            type: 'FeatureCollection',
-            features: [res],
-          }),
-        ),
+      getAreaFeature(code).then(
+        (res) =>
+          res &&
+          areas.file(
+            `${code}.json`,
+            JSON.stringify({
+              type: 'FeatureCollection',
+              features: [res],
+            }),
+          ),
       ),
     ),
   ).then(() => {
@@ -122,22 +140,19 @@ export function exportFiles(codes: string[]) {
   });
 }
 
-function readGeometry(lines: string): GeoJSONPolygon | GeoJSONMultiPolygon {
-  const polygons = lines
-    .split('|')
-    .map((item) => [
-      item.split(';').map((item) => item.split(',').map((item) => +item)),
-    ]);
-
-  if (polygons.length > 1) {
-    return {
-      type: 'MultiPolygon',
-      coordinates: polygons,
-    } as GeoJSONMultiPolygon;
+function formatFeature(
+  feature: GeoJSONFeature,
+): GeoJSONPolygon | GeoJSONMultiPolygon {
+  if (feature?.geometry?.type === 'MultiPolygon') {
+    if (feature.geometry.coordinates?.length === 1) {
+      return {
+        type: 'Polygon',
+        coordinates: feature.geometry.coordinates[0],
+      } as GeoJSONPolygon;
+    } else {
+      return feature;
+    }
   } else {
-    return {
-      type: 'Polygon',
-      coordinates: polygons[0],
-    } as GeoJSONPolygon;
+    return feature;
   }
 }
